@@ -15,7 +15,7 @@
 					<el-dropdown-menu slot="dropdown">
 						<el-dropdown-item>我的消息</el-dropdown-item>
 						<el-dropdown-item>设置</el-dropdown-item>
-						<el-dropdown-item divided @click.native="logout">退出登录</el-dropdown-item>
+						<el-dropdown-item divided @click.native="logout">LOGOUT</el-dropdown-item>
 					</el-dropdown-menu>
 				</el-dropdown>
 			</el-col>
@@ -23,7 +23,7 @@
 		<el-col :span="24" class="main">
 			<aside :class="collapsed?'menu-collapsed':'menu-expanded'">
 				<!--导航菜单-->
-				<el-menu :default-active="$route.path" class="el-menu-vertical-demo" @open="handleopen" @close="handleclose" @select="handleselect"
+				<el-menu :default-active="$route.path" id="sidebar-custom" class="el-menu-vertical-demo" @open="handleopen" @close="handleclose" @select="handleselect"
 					 unique-opened router v-show="!collapsed">
 					<template v-for="(item,index) in $router.options.routes" v-if="!item.hidden">
 						<el-submenu :index="index+''" v-if="!item.leaf">
@@ -72,10 +72,11 @@
 </template>
 
 <script>
+  import config from '../config';
 	export default {
 		data() {
 			return {
-				sysName:'VUEADMIN',
+				sysName:'ADMIN PAGE',
 				collapsed:false,
 				sysUserName: '',
 				sysUserAvatar: '',
@@ -105,34 +106,27 @@
 			},
 			//退出登录
 			logout: function () {
-				var _this = this;
-				this.$confirm('确认退出吗?', '提示', {
-					//type: 'warning'
-				}).then(() => {
-					sessionStorage.removeItem('user');
-					_this.$router.push('/login');
-				}).catch(() => {
-
-				});
-
-
+				localStorage.removeItem('token');
+				window.location = '/login';
 			},
 			//折叠导航栏
 			collapse:function(){
 				this.collapsed=!this.collapsed;
+				if (this.collapsed === false) {
+					document.getElementById('sidebar-custom').style.width = '';
+				}
 			},
 			showMenu(i,status){
 				this.$refs.menuCollapsed.getElementsByClassName('submenu-hook-'+i)[0].style.display=status?'block':'none';
 			}
 		},
 		mounted() {
-			var user = sessionStorage.getItem('user');
+			var user = localStorage.getItem('user');
 			if (user) {
 				user = JSON.parse(user);
 				this.sysUserName = user.name || '';
-				this.sysUserAvatar = user.avatar || '';
+				this.sysUserAvatar = `${config.BASE_URL}/photo/${user.photo}` || '';
 			}
-
 		}
 	}
 

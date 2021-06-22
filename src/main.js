@@ -10,8 +10,11 @@ import Vuex from 'vuex'
 //import NProgress from 'nprogress'
 //import 'nprogress/nprogress.css'
 import routes from './routes'
-import Mock from './mock'
-Mock.bootstrap();
+import jwt from 'jsonwebtoken'
+import config from './config'
+import axios from 'axios'
+// import Mock from './mock'
+// Mock.bootstrap();
 import 'font-awesome/css/font-awesome.min.css'
 
 Vue.use(ElementUI)
@@ -20,20 +23,49 @@ Vue.use(Vuex)
 
 //NProgress.configure({ showSpinner: false });
 
+axios.defaults.headers = {
+  token: localStorage.getItem('token')
+}
+
 const router = new VueRouter({
+  mode: 'history',
+  base: process.env.BASE_URL,
   routes
 })
 
-router.beforeEach((to, from, next) => {
-  //NProgress.start();
-  if (to.path == '/login') {
-    sessionStorage.removeItem('user');
-  }
-  let user = JSON.parse(sessionStorage.getItem('user'));
-  if (!user && to.path != '/login') {
-    next({ path: '/login' })
+const isLogin = (token) => {
+  if (token !== null && token !== 'undefined') {
+    let verify
+    jwt.verify(token, config.JWT_KEY, (err, result) => {
+      if (err || result.role !== 'admin') {
+        verify = false
+      } else {
+        verify = true
+      }
+    })
+    return verify
   } else {
-    next()
+    return false
+  }
+}
+
+router.beforeEach((to, from, next) => {
+  if (to.matched.some(record => record.meta.requiresAuth)) {
+    if (isLogin(localStorage.getItem('token'))) {
+      next()
+    } else {
+      next({
+        path: '/login'
+      })
+    }
+  } else {
+    if (!isLogin(localStorage.getItem('token'))) {
+      next()
+    } else {
+      next({
+        path: '/'
+      })
+    }
   }
 })
 

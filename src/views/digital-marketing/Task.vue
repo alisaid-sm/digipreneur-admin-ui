@@ -4,44 +4,44 @@
 		<el-col :span="24" class="toolbar" style="padding-bottom: 0px;">
 			<el-form :inline="true" :model="filters">
 				<el-form-item>
-					<el-input v-model="filters.name" placeholder="姓名"></el-input>
+					<el-select placeholder="Select Task" v-model="taskSelected" @change="getSubTask">
+						<el-option
+						v-for="(item, index) in taskList"
+						:key="index"
+						:value="item.id"
+						:label="item.name">
+						</el-option>
+					</el-select>
 				</el-form-item>
 				<el-form-item>
-					<el-button type="primary" v-on:click="getUsers">查询</el-button>
+					<el-button type="primary" v-on:click="getUsers">Tambah Task</el-button>
 				</el-form-item>
 				<el-form-item>
-					<el-button type="primary" @click="handleAdd">新增</el-button>
+					<el-button type="primary" @click="handleAdd">Tambah Subtask</el-button>
 				</el-form-item>
 			</el-form>
 		</el-col>
 
 		<!--列表-->
-		<el-table :data="users" highlight-current-row v-loading="listLoading" @selection-change="selsChange" style="width: 100%;">
-			<el-table-column type="selection" width="55">
+		<el-table :data="subTaskList" highlight-current-row v-loading="listLoading" @selection-change="selsChange" style="width: 100%;">
+			<!-- <el-table-column type="selection" width="55">
+			</el-table-column> -->
+			<el-table-column prop="name" label="name" sortable>
 			</el-table-column>
-			<el-table-column type="index" width="60">
+			<el-table-column prop="createdAt" label="createdAt" sortable>
 			</el-table-column>
-			<el-table-column prop="name" label="姓名" width="120" sortable>
+			<el-table-column prop="updatedAt" label="updatedAt" sortable>
 			</el-table-column>
-			<el-table-column prop="sex" label="性别" width="100" :formatter="formatSex" sortable>
-			</el-table-column>
-			<el-table-column prop="age" label="年龄" width="100" sortable>
-			</el-table-column>
-			<el-table-column prop="birth" label="生日" width="120" sortable>
-			</el-table-column>
-			<el-table-column prop="addr" label="地址" min-width="180" sortable>
-			</el-table-column>
-			<el-table-column label="操作" width="150">
+			<el-table-column label="Aksi">
 				<template scope="scope">
-					<el-button size="small" @click="handleEdit(scope.$index, scope.row)">编辑</el-button>
-					<el-button type="danger" size="small" @click="handleDel(scope.$index, scope.row)">删除</el-button>
+					<el-button size="small" @click="handleEdit(scope.$index, scope.row)">Check Description</el-button>
 				</template>
 			</el-table-column>
 		</el-table>
 
 		<!--工具条-->
 		<el-col :span="24" class="toolbar">
-			<el-button type="danger" @click="batchRemove" :disabled="this.sels.length===0">批量删除</el-button>
+			<!-- <el-button type="danger" @click="batchRemove" :disabled="this.sels.length===0">批量删除</el-button> -->
 			<el-pagination layout="prev, pager, next" @current-change="handleCurrentChange" :page-size="20" :total="total" style="float:right;">
 			</el-pagination>
 		</el-col>
@@ -108,6 +108,8 @@
 	import util from '../../common/js/util'
 	//import NProgress from 'nprogress'
 	import { getUserListPage, removeUser, batchRemoveUser, editUser, addUser } from '../../api/api';
+	import axios from 'axios'
+	import config from '../../config'
 
 	export default {
 		data() {
@@ -115,7 +117,7 @@
 				filters: {
 					name: ''
 				},
-				users: [],
+				subTaskList: [],
 				total: 0,
 				page: 1,
 				listLoading: false,
@@ -152,8 +154,9 @@
 					age: 0,
 					birth: '',
 					addr: ''
-				}
-
+				},
+				taskList: [],
+				taskSelected: ''
 			}
 		},
 		methods: {
@@ -289,10 +292,30 @@
 				}).catch(() => {
 
 				});
+			},
+			async getSubTask () {
+				this.listLoading = true;
+				const dataSubTask = await axios.get(`${config.BASE_URL}/tasks/${this.taskSelected}`);
+				this.subTaskList = await dataSubTask.data.subtask;
+				this.total = this.subTaskList.length
+				this.listLoading = false;
 			}
 		},
-		mounted() {
-			this.getUsers();
+		async mounted() {
+			try {
+				const dataTask = await axios.get(`${config.BASE_URL}/tasks`);
+				this.taskList = await dataTask.data
+				if (dataTask.length !== 0) {
+					this.listLoading = true;
+					this.taskSelected = await dataTask.data[0].id;
+					const dataSubTask = await axios.get(`${config.BASE_URL}/tasks/${dataTask.data[0].id}`);
+					this.subTaskList = await dataSubTask.data.subtask;
+					this.total = this.subTaskList.length
+					this.listLoading = false;
+				}
+			} catch (error) {
+				console.log(error);
+			}
 		}
 	}
 
